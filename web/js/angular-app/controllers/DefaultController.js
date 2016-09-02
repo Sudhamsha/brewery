@@ -70,7 +70,8 @@ angular.module('app').
         // POST Request
          $http.post('/search', {type: searchType, text: searchText}).then(function(response) {
                 $scope.search_results  = response.data;
-                
+
+                $scope.search_results  = $scope.search_results.data;
                 // If there's no check, user is lookin for more beers in the brewery, so filter! 
                 if(noCheck){
                     $scope.search_results  = $filter('filter')($scope.search_results.data, {$: $scope.beer.breweries[0].name});

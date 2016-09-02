@@ -10,6 +10,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\Config\Definition\Exception\Exception;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -36,7 +37,7 @@ class BreweryController extends Controller
     /**
      * Get the beers from the API Call
      * @param Request $request
-     * @return array
+     * @return Response
      */
     public function getBeersAction(Request $request){
         
@@ -71,18 +72,28 @@ class BreweryController extends Controller
     /**
      * Search the beers/breweries from the API Call
      * @param Request $request
-     * @return array
+     * @return Response
      */
     public function searchAction(Request $request){
-        
+
         // Get Posted Content
         $postedContent = json_decode($request->getContent());
-        
+
+        // Handle Error if type/text are not set
+        if( !isset($postedContent->type) || !isset($postedContent->text)){
+            return $this->handleError("Search Type or Search Text are not set");
+        }
+
         // What you need to get
         $searchType = $postedContent->type;
         $searchText = $postedContent->text;
         $type       = "search";
-        
+
+        // Perform Regex Validation on Search Text
+        if( !preg_match('/^[a-zA-Z0-9_\d\_\s-]+$/', $searchText) ){
+            return $this->handleError("Search Text should only contain alpha-numeric values, spaces or hyphen");
+        }
+
         $returnQuantity = 1;
         
         // Pass Additional Params
@@ -120,12 +131,19 @@ class BreweryController extends Controller
      * Handle Errors
      * @param $errMessage
      * @param $e
-     * returns JsonResponse
+     * @param $type
+     * @return JsonResponse
+     * @todo Implement Database Logging
      *
      */
-    public function handleError($errMessage, $e = NULL){
-        
-        // Returning JSON Response to Angular App to handle the rest
-        return new JsonResponse($errMessage, 400);
+    public function handleError($errMessage, $e = NULL, $type = "JSON"){
+
+        if( $type == "JSON"){
+            // Returning JSON Response to Angular App to handle the rest
+            return new JsonResponse($errMessage, 400);
+        } else {
+            throw new Exception("REGEX Failed");
+        }
+
     }
 }
